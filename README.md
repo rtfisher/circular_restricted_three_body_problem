@@ -2,6 +2,12 @@
 
 A Python implementation of the circular restricted three-body problem integrator with automatic plot bounds, equipotential contours, and animation support.
 
+## Sample Output
+
+![L1 Lagrange Point Instability](cr3bp_orbit_L1.png)
+
+*Example trajectory showing the unstable nature of the L₁ Lagrange point in the Earth-Moon system (μ = 0.1). The particle begins near L₁ and departs along the unstable manifold.*
+
 ## Overview
 
 This repository contains a single Python script that numerically integrates the motion of a massless particle in the **circular restricted three-body problem (CR3BP)** within the uniformly rotating reference frame. The solver automatically sizes plot windows to contain the entire trajectory plus both primary bodies, ensuring that orbits never run out of bounds.
