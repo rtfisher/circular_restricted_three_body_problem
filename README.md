@@ -1,5 +1,9 @@
 # Circular Restricted Three-Body Problem (CR3BP) Solver
 
+![CI Test Suite](https://github.com/rtfisher/circular_restricted_three_body_problem/actions/workflows/ci.yml/badge.svg)
+![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
 A Python implementation of the circular restricted three-body problem integrator with automatic plot bounds, equipotential contours, and animation support.
 
 ## Sample Output
