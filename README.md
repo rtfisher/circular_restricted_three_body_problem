@@ -41,7 +41,7 @@ pip install -r requirements.txt
 Or manually:
 
 ```bash
-pip install numpy scipy matplotlib
+pip install numpy scipy matplotlib pytest pytest-cov
 ```
 
 ### Optional: Animation Support
@@ -154,6 +154,54 @@ and r₁, r₂ are the distances from the particle to M₁ and M₂, respectivel
 
 The Jacobi constant C = 2Ω - v² is an integral of motion in the CR3BP, meaning it remains constant along trajectories. The code computes and reports C at t = 0.
 
+## Testing
+
+The repository includes a comprehensive test suite covering unit tests, integration tests, and physics validation.
+
+### Running Tests
+
+Run all tests:
+```bash
+pytest test_three_body.py -v
+```
+
+Run with coverage report:
+```bash
+pytest test_three_body.py --cov=three_body_integrator --cov-report=html
+```
+
+Run specific test categories:
+```bash
+# Test Jacobi constant conservation
+pytest test_three_body.py::TestJacobiConstantConservation -v
+
+# Test numerical accuracy
+pytest test_three_body.py::TestNumericalAccuracy -v
+
+# Test Lagrange point equilibria
+pytest test_three_body.py::TestLagrangePoints -v
+```
+
+### Test Coverage
+
+The test suite includes:
+- **Unit tests**: Individual function validation (radii, potential, equations of motion)
+- **Integration tests**: Full orbital dynamics with various initial conditions
+- **Conservation laws**: Jacobi constant conservation to machine precision
+- **Angular momentum**: Rotating frame angular momentum behavior
+- **Numerical accuracy**: Convergence tests with different tolerances
+- **Lagrange points**: Equilibrium verification at L1, L2, L4, L5
+- **Edge cases**: Extreme mass ratios, zero velocities, equal masses
+
+### Continuous Integration
+
+Tests run automatically on:
+- Every push to `main` or `develop` branches
+- All pull requests
+- Daily at 2:00 AM UTC (scheduled)
+
+The CI workflow tests across multiple Python versions (3.9-3.12) and operating systems (Ubuntu, macOS, Windows).
+
 ## Tips and Best Practices
 
 - **Sharpening curves**: Reduce `--max-step` (e.g., to 2e-3) for smoother trajectories at the cost of longer computation
@@ -167,14 +215,19 @@ The Jacobi constant C = 2Ω - v² is an integral of motion in the CR3BP, meaning
 ```
 .
 ├── three_body_integrator.py    # Main solver and visualization code
+├── test_three_body.py          # Comprehensive test suite
 ├── requirements.txt            # Python package dependencies
+├── pytest.ini                  # Pytest configuration
 ├── README.md                   # This file
 ├── LICENSE                     # MIT License
-├── .gitignore                 # Git ignore rules
-├── cr3bp_orbit.png            # Sample static output
-├── cr3bp_orbit_L1.png         # Sample L1 instability plot
-├── cr3bp_animation.mp4        # Sample animation
-└── cr3bp_animation_L1.mp4     # Sample L1 instability animation
+├── .gitignore                  # Git ignore rules
+├── .github/
+│   └── workflows/
+│       └── ci.yml              # GitHub Actions CI workflow
+├── cr3bp_orbit.png             # Sample static output
+├── cr3bp_orbit_L1.png          # Sample L1 instability plot
+├── cr3bp_animation.mp4         # Sample animation
+└── cr3bp_animation_L1.mp4      # Sample L1 instability animation
 ```
 
 ## License
