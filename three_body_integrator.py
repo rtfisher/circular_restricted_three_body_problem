@@ -206,6 +206,204 @@ def create_animation(solution, mu, filename="cr3bp_animation.mp4", trail_length=
     plt.close(fig)
 
 
+# ------------------------------ Inertial Frame Transformation ----------------
+def rotating_to_inertial(x_rot, y_rot, t):
+    """
+    Transform coordinates from rotating frame to inertial frame.
+
+    At time t, the rotating frame has rotated by angle θ = Ω*t = t (since Ω=1).
+    Rotation matrix: R(θ) = [[cos(θ), -sin(θ)], [sin(θ), cos(θ)]]
+
+    Args:
+        x_rot: x position(s) in rotating frame
+        y_rot: y position(s) in rotating frame
+        t: time or array of times
+
+    Returns:
+        x_inertial, y_inertial: positions in inertial frame
+    """
+    cos_t = np.cos(t)
+    sin_t = np.sin(t)
+
+    x_inertial = x_rot * cos_t - y_rot * sin_t
+    y_inertial = x_rot * sin_t + y_rot * cos_t
+
+    return x_inertial, y_inertial
+
+
+def plot_static_orbit_inertial(solution, mu, filename="cr3bp_orbit_inertial.png"):
+    """
+    Static plot of the full orbit in the inertial frame.
+    In the inertial frame, the two primaries rotate around the barycenter.
+    No effective potential is shown (it only exists in the rotating frame).
+    """
+    # Transform particle trajectory to inertial frame
+    x_rot = solution.y[0]
+    y_rot = solution.y[1]
+    t = solution.t
+
+    x_inertial, y_inertial = rotating_to_inertial(x_rot, y_rot, t)
+
+    # Compute plot window in inertial frame
+    # Include primaries at their maximum extent (radius = separation from barycenter)
+    r1 = mu  # M1 orbits at radius mu
+    r2 = 1.0 - mu  # M2 orbits at radius 1-mu
+    max_r = max(r1, r2)
+
+    x_min = min(x_inertial.min(), -max_r) - 0.1
+    x_max = max(x_inertial.max(), max_r) + 0.1
+    y_min = min(y_inertial.min(), -max_r) - 0.1
+    y_max = max(y_inertial.max(), max_r) + 0.1
+
+    # Make square
+    cx = 0.5 * (x_min + x_max)
+    cy = 0.5 * (y_min + y_max)
+    span = max(x_max - x_min, y_max - y_min)
+    half = 0.5 * span * 1.08
+
+    x_min, x_max = cx - half, cx + half
+    y_min, y_max = cy - half, cy + half
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    # Plot the circular orbits of the primaries
+    theta = np.linspace(0, 2*np.pi, 200)
+    ax.plot(r1 * np.cos(theta), r1 * np.sin(theta), '--',
+            color='gray', alpha=0.3, linewidth=1, label='M1 orbit')
+    ax.plot(r2 * np.cos(theta), r2 * np.sin(theta), '--',
+            color='gray', alpha=0.3, linewidth=1, label='M2 orbit')
+
+    # Plot initial positions of primaries (at t=0)
+    x1_0, y1_0 = rotating_to_inertial(-mu, 0.0, 0.0)
+    x2_0, y2_0 = rotating_to_inertial(1.0 - mu, 0.0, 0.0)
+
+    ax.scatter([x1_0], [y1_0], s=200*(1-mu), marker='o',
+               edgecolors='black', linewidths=1.2, zorder=5, label='M1 (t=0)')
+    ax.scatter([x2_0], [y2_0], s=200*mu, marker='o',
+               edgecolors='black', linewidths=1.2, zorder=5, label='M2 (t=0)')
+
+    # Plot final positions of primaries (at t=tmax)
+    x1_f, y1_f = rotating_to_inertial(-mu, 0.0, t[-1])
+    x2_f, y2_f = rotating_to_inertial(1.0 - mu, 0.0, t[-1])
+
+    ax.scatter([x1_f], [y1_f], s=200*(1-mu), marker='s',
+               edgecolors='black', linewidths=1.2, zorder=5, alpha=0.5, label='M1 (t=end)')
+    ax.scatter([x2_f], [y2_f], s=200*mu, marker='s',
+               edgecolors='black', linewidths=1.2, zorder=5, alpha=0.5, label='M2 (t=end)')
+
+    # Particle trajectory in inertial frame
+    ax.plot(x_inertial, y_inertial, linewidth=1.6, alpha=0.8,
+            label="Trajectory (inertial)", zorder=4)
+    ax.plot(x_inertial[0], y_inertial[0], 'o', ms=8, label="Start", zorder=6)
+
+    # Barycenter at origin
+    ax.scatter([0], [0], s=50, marker='x', color='black', zorder=5, label='Barycenter')
+
+    C = jacobi_constant(solution.y[:, 0], mu)
+    ax.set_title(f"CR3BP (inertial frame) — q = {mu/(1-mu):.3f},  C = {C:.5f}", fontsize=14)
+    ax.set_xlabel("x (inertial)")
+    ax.set_ylabel("y (inertial)")
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.grid(alpha=0.3)
+    ax.legend(loc="upper right", fontsize=9)
+
+    plt.tight_layout()
+    plt.savefig(filename, dpi=160, bbox_inches="tight")
+    print(f"[static inertial] saved {filename}")
+    plt.close(fig)
+
+
+def create_animation_inertial(solution, mu, filename="cr3bp_animation_inertial.mp4", trail_length=200):
+    """
+    Animate the orbit in the inertial frame with rotating primaries.
+    """
+    # Transform trajectory to inertial frame
+    x_rot = solution.y[0]
+    y_rot = solution.y[1]
+    t = solution.t
+
+    x_inertial, y_inertial = rotating_to_inertial(x_rot, y_rot, t)
+
+    # Compute plot window
+    r1 = mu
+    r2 = 1.0 - mu
+    max_r = max(r1, r2)
+
+    x_min = min(x_inertial.min(), -max_r) - 0.1
+    x_max = max(x_inertial.max(), max_r) + 0.1
+    y_min = min(y_inertial.min(), -max_r) - 0.1
+    y_max = max(y_inertial.max(), max_r) + 0.1
+
+    # Make square
+    cx = 0.5 * (x_min + x_max)
+    cy = 0.5 * (y_min + y_max)
+    span = max(x_max - x_min, y_max - y_min)
+    half = 0.5 * span * 1.08
+
+    x_min, x_max = cx - half, cx + half
+    y_min, y_max = cy - half, cy + half
+
+    fig, ax = plt.subplots(figsize=(10, 8))
+
+    # Plot circular orbits
+    theta = np.linspace(0, 2*np.pi, 200)
+    ax.plot(r1 * np.cos(theta), r1 * np.sin(theta), '--',
+            color='gray', alpha=0.3, linewidth=1)
+    ax.plot(r2 * np.cos(theta), r2 * np.sin(theta), '--',
+            color='gray', alpha=0.3, linewidth=1)
+
+    # Barycenter
+    ax.scatter([0], [0], s=50, marker='x', color='black', zorder=5)
+
+    # Animation elements
+    trail, = ax.plot([], [], linewidth=1.6, alpha=0.8, label="Trajectory")
+    dot, = ax.plot([], [], 'o', ms=8, zorder=6, label="Particle")
+    m1_marker = ax.scatter([], [], s=200*(1-mu), marker='o',
+                          edgecolors='black', linewidths=1.2, zorder=5, label='M1')
+    m2_marker = ax.scatter([], [], s=200*mu, marker='o',
+                          edgecolors='black', linewidths=1.2, zorder=5, label='M2')
+
+    C = jacobi_constant(solution.y[:, 0], mu)
+    ax.set_title(f"CR3BP (inertial frame) — q = {mu/(1-mu):.3f},  C = {C:.5f}", fontsize=14)
+    ax.set_xlabel("x (inertial)")
+    ax.set_ylabel("y (inertial)")
+    ax.set_aspect('equal', adjustable='box')
+    ax.set_xlim(x_min, x_max)
+    ax.set_ylim(y_min, y_max)
+    ax.grid(alpha=0.3)
+    ax.legend(loc="upper right", fontsize=10)
+
+    n = len(t)
+    frames = np.arange(n)
+
+    def update(k):
+        # Update particle trail and position
+        i0 = max(0, k - trail_length)
+        x = x_inertial[i0:k+1]
+        y = y_inertial[i0:k+1]
+        trail.set_data(x, y)
+        dot.set_data([x_inertial[k]], [y_inertial[k]])
+
+        # Update primary positions
+        x1_k, y1_k = rotating_to_inertial(-mu, 0.0, t[k])
+        x2_k, y2_k = rotating_to_inertial(1.0 - mu, 0.0, t[k])
+        m1_marker.set_offsets([[x1_k, y1_k]])
+        m2_marker.set_offsets([[x2_k, y2_k]])
+
+        return trail, dot, m1_marker, m2_marker
+
+    print(f"[anim inertial] saving {filename} ... (requires ffmpeg)")
+    anim = FuncAnimation(fig, update, frames=frames, interval=20, blit=True)
+    try:
+        anim.save(filename, writer="ffmpeg", fps=30, dpi=100)
+        print(f"[anim inertial] saved {filename}")
+    except Exception as e:
+        print(f"[anim inertial] could not save animation: {e}")
+    plt.close(fig)
+
+
 # ------------------------------ CLI / main -----------------------------------
 def parse_args():
     p = argparse.ArgumentParser(description="CR3BP solver + plots with auto-bounded axes.")
@@ -219,6 +417,7 @@ def parse_args():
     p.add_argument("--no-static", action="store_true", help="Skip static PNG output")
     p.add_argument("--no-anim", action="store_true", help="Skip MP4 animation output")
     p.add_argument("--trail", type=int, default=300, help="Trail length for animation (in steps)")
+    p.add_argument("--inertial", action="store_true", help="Plot in inertial frame (rotating primaries)")
     return p.parse_args()
 
 
@@ -230,18 +429,32 @@ def main():
         raise ValueError("mu must be in [0,1]")
 
     state0 = np.array([args.x0, args.y0, args.vx0, args.vy0], dtype=float)
+
+    frame_type = "inertial" if args.inertial else "rotating"
     print(f"Integrating with mu={mu:.6f}, state0={state0}, tmax={args.tmax} ...")
+    print(f"Output frame: {frame_type}")
+
     sol = integrate_orbit(mu, state0, t_span=(0.0, args.tmax), max_step=args.max_step)
 
     # Compute and echo Jacobi constant at t0
     C0 = jacobi_constant(state0, mu)
     print(f"Jacobi constant at t0: C0 = {C0:.8f}")
 
-    if not args.no_static:
-        plot_static_orbit(sol, mu, filename="cr3bp_orbit.png")
+    if args.inertial:
+        # Inertial frame outputs
+        if not args.no_static:
+            plot_static_orbit_inertial(sol, mu, filename="cr3bp_orbit_inertial.png")
 
-    if not args.no_anim:
-        create_animation(sol, mu, filename="cr3bp_animation.mp4", trail_length=args.trail)
+        if not args.no_anim:
+            create_animation_inertial(sol, mu, filename="cr3bp_animation_inertial.mp4",
+                                     trail_length=args.trail)
+    else:
+        # Rotating frame outputs (default)
+        if not args.no_static:
+            plot_static_orbit(sol, mu, filename="cr3bp_orbit.png")
+
+        if not args.no_anim:
+            create_animation(sol, mu, filename="cr3bp_animation.mp4", trail_length=args.trail)
 
     print("Done.")
 

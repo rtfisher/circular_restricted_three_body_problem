@@ -74,11 +74,17 @@ python three_body_integrator.py --mu 0.1 --x0 0.3 --y0 0.0 --vx0 0.0 --vy0 0.5 -
 - `--no-static`: Skip saving the static PNG plot
 - `--no-anim`: Skip saving the MP4 animation
 - `--trail`: Number of integration steps to show in animation trail (default: 300)
+- `--inertial`: Plot in the inertial frame (primaries rotate; no effective potential contours)
 
 ### Output Files
 
-- `cr3bp_orbit.png` — Static plot showing the complete trajectory
+**Rotating Frame (default):**
+- `cr3bp_orbit.png` — Static plot showing the complete trajectory with effective potential contours
 - `cr3bp_animation.mp4` — Animation of the particle's motion (requires ffmpeg)
+
+**Inertial Frame (with `--inertial` flag):**
+- `cr3bp_orbit_inertial.png` — Static plot with rotating primaries (no potential contours)
+- `cr3bp_animation_inertial.mp4` — Animation showing rotating primaries and particle
 
 ## Example Scenarios
 
@@ -127,15 +133,34 @@ python three_body_integrator.py \
   --mu 0.01215 --x0 0.48785 --y0 0.8660254 --vx0 0.0 --vy0 8e-5 --tmax 200
 ```
 
+### 4. Inertial Frame Visualization
+
+View the same orbit in the **inertial frame** where the primaries rotate:
+
+```bash
+python three_body_integrator.py \
+  --mu 0.1 --x0 0.3 --y0 0.0 --vx0 0.0 --vy0 0.5 --tmax 40 --inertial
+```
+
+In the inertial frame:
+- The two primaries rotate around their common barycenter (at the origin)
+- The effective potential contours are **not** shown (they only exist in the rotating frame)
+- Circular orbits show the paths of M₁ and M₂
+- Primary positions are shown at t=0 (circles) and t=end (squares)
+
 ## Physics and Coordinates
 
-### Reference Frame
+### Reference Frames
 
-The code uses the **uniformly rotating frame** where:
+The code integrates in the **uniformly rotating frame** where:
 - The two primary bodies remain fixed on the x-axis
 - Primary M₁ (mass 1-μ) is located at (-μ, 0)
 - Primary M₂ (mass μ) is located at (1-μ, 0)
 - The frame rotates with angular velocity Ω = 1
+
+Visualization can be in either frame:
+- **Rotating frame** (default): Primaries are stationary, effective potential is shown
+- **Inertial frame** (`--inertial`): Primaries rotate around the barycenter at the origin
 
 ### Equations of Motion
 
